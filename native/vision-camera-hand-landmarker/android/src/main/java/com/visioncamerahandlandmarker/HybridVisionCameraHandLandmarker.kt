@@ -123,12 +123,16 @@ class HybridVisionCameraHandLandmarker : HybridVisionCameraHandLandmarkerSpec() 
     height: Double,
     rotationDegrees: Double,
   ): Array<VisionCameraHandLandmarkerResult> {
-    val landmarker = getOrCreateLandmarker() ?: return emptyArray()
+    val landmarker = getOrCreateLandmarker()
+    if (landmarker == null) {
+      Log.w(TAG, "detect(): landmarker unavailable (model missing or init failed)")
+      return emptyArray()
+    }
 
     // `pixelFormat: 'rgb'` on the JS side's `useFrameOutput` means the
     // buffer is raw RGB888 — matches MPImage.IMAGE_FORMAT_RGB below.
     val image: MPImage = ByteBufferImageBuilder(
-      buffer.getBuffer(false),
+      buffer.getBuffer(true),
       width.toInt(),
       height.toInt(),
       MPImage.IMAGE_FORMAT_RGB,
@@ -148,10 +152,16 @@ class HybridVisionCameraHandLandmarker : HybridVisionCameraHandLandmarkerSpec() 
     val handsLandmarks = result.landmarks()
     val handsHandedness = result.handedness()
 
+    if (handsLandmarks.isEmpty()) {
+      Log.d(TAG, "detect(): no hand in ${width.toInt()}x${height.toInt()} frame")
+      return emptyArray()
+    }
+
     return handsLandmarks.indices.map { i ->
       val points = handsLandmarks[i]
       val handedness = handsHandedness.getOrNull(i)?.firstOrNull()?.categoryName() ?: "Unknown"
       val (gesture, confidence) = classifyGesture(points)
+      Log.i(TAG, "detect(): $handedness ${gesture ?: "none"} conf=$confidence")
       val wrist = points[WRIST]
 
       VisionCameraHandLandmarkerResult(

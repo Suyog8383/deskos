@@ -1,3 +1,4 @@
+const path = require('path');
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 
 /**
@@ -7,11 +8,14 @@ const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
  * @type {import('@react-native/metro-config').MetroConfig}
  */
 const config = {
+  watchFolders: [path.resolve(__dirname, 'native/vision-camera-hand-landmarker')],
   resolver: {
-    // Prevent Metro from scanning the backend server folder.
-    // server/ uses Node.js-only packages (ws, nut-js, etc.) that are
-    // incompatible with the React Native bundler.
-    blockList: [/server\/.*/],
+    extraNodeModules: {
+      'react-native-vision-camera-hand-landmarker': path.resolve(
+        __dirname,
+        'native/vision-camera-hand-landmarker',
+      ),
+    },
   },
 };
 

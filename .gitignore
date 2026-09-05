@@ -35,6 +35,10 @@ local.properties
 !debug.keystore
 .kotlin/
 
+# MediaPipe model binaries (fetched locally, not committed)
+android/app/src/main/assets/*.task
+native/vision-camera-hand-landmarker/android/src/main/assets/*.task
+
 # node.js
 #
 node_modules/
