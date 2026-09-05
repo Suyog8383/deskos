@@ -13,7 +13,9 @@ class MainApplication : Application(), ReactApplication {
     getDefaultReactHost(
       context = applicationContext,
       packageList =
-        PackageList(this).packages,
+        PackageList(this).packages.apply {
+          add(MediaStoreOpsPackage())
+        },
     )
   }
 

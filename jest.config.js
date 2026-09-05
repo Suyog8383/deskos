@@ -12,5 +12,7 @@ module.exports = {
     '^react-native-worklets$': '<rootDir>/__mocks__/react-native-worklets.ts',
     '^@react-native-camera-roll/camera-roll$':
       '<rootDir>/__mocks__/@react-native-camera-roll/camera-roll.ts',
+    '^@react-native-async-storage/async-storage$':
+      '<rootDir>/__mocks__/@react-native-async-storage/async-storage.ts',
   },
 };
