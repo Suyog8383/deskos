@@ -29,13 +29,6 @@ const MODELS = [
     cost: 'free',
   },
   {
-    id: 'deepseek-chat',
-    slug: 'deepseek/deepseek-chat',
-    label: 'DeepSeek Chat',
-    maxTokens: 512,
-    cost: '$0.14/M',
-  },
-  {
     id: 'deepseek-r1-free',
     slug: 'deepseek/deepseek-r1:free',
     label: 'DeepSeek R1 (Free, reasoning)',
@@ -55,6 +48,14 @@ const MODELS = [
     label: 'Llama 4 Maverick (Free)',
     maxTokens: 1024,
     cost: 'free',
+  },
+  // ⚠️ PAID — only used as last-resort fallback if all free models fail
+  {
+    id: 'deepseek-chat',
+    slug: 'deepseek/deepseek-chat',
+    label: 'DeepSeek Chat (Paid fallback)',
+    maxTokens: 512,
+    cost: '$0.14/M',
   },
 ];
 
