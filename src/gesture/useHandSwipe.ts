@@ -16,6 +16,20 @@ const SWIPE_DISTANCE_THRESHOLD = 0.18;
 const SWIPE_COOLDOWN_MS = 800;
 // How far back to look for palm-position samples when computing direction.
 const WINDOW_MS = 350;
+// MediaPipe's per-frame IMAGE-mode detection (no motion tracking between
+// frames) frequently misses a frame or two of a genuinely fast-moving,
+// motion-blurred hand. Without this grace period, that one missed frame
+// wipes the whole rolling window before a real swipe can accumulate enough
+// distance, while a hand held still for a static gesture (e.g. a pinch) is
+// detected every frame and never hits this path — so treat a short gap as
+// "still tracking", not "hand gone".
+const DETECTION_GRACE_MS = 220;
+// Fraction of consecutive sample-to-sample deltas that must agree with the
+// overall swipe direction. Filters out the tiny back-and-forth jitter of a
+// hand held steady up close to the lens (e.g. mid-pinch), which can
+// otherwise cross SWIPE_DISTANCE_THRESHOLD without ever being a deliberate
+// one-direction sweep.
+const MIN_TREND_AGREEMENT = 0.6;
 
 type Sample = { x: number; t: number };
 
@@ -32,6 +46,7 @@ export function useHandSwipe(onSwipeLeft: () => void, onSwipeRight: () => void) 
   const [handDetected, setHandDetected] = useState(false);
 
   const samplesRef = useRef<Sample[]>([]);
+  const lastSeenAtRef = useRef(0);
   const lastSwipeAtRef = useRef(0);
   const onSwipeLeftRef = useRef(onSwipeLeft);
   const onSwipeRightRef = useRef(onSwipeRight);
@@ -39,14 +54,17 @@ export function useHandSwipe(onSwipeLeft: () => void, onSwipeRight: () => void) 
   onSwipeRightRef.current = onSwipeRight;
 
   const handlePalmX = useCallback((palmX: number | null) => {
+    const now = Date.now();
+    setHandDetected(palmX != null);
+
     if (palmX == null) {
-      setHandDetected(false);
-      samplesRef.current = [];
+      if (now - lastSeenAtRef.current > DETECTION_GRACE_MS) {
+        samplesRef.current = [];
+      }
       return;
     }
-    setHandDetected(true);
+    lastSeenAtRef.current = now;
 
-    const now = Date.now();
     const samples = samplesRef.current;
     samples.push({ x: palmX, t: now });
     while (samples.length > 0 && now - samples[0].t > WINDOW_MS) {
@@ -59,6 +77,19 @@ export function useHandSwipe(onSwipeLeft: () => void, onSwipeRight: () => void) 
 
     const dx = palmX - samples[0].x;
     if (Math.abs(dx) < SWIPE_DISTANCE_THRESHOLD) {
+      return;
+    }
+
+    const dxSign = Math.sign(dx);
+    let agree = 0;
+    let total = 0;
+    for (let i = 1; i < samples.length; i++) {
+      const step = samples[i].x - samples[i - 1].x;
+      if (step === 0) continue;
+      total++;
+      if (Math.sign(step) === dxSign) agree++;
+    }
+    if (total > 0 && agree / total < MIN_TREND_AGREEMENT) {
       return;
     }
 

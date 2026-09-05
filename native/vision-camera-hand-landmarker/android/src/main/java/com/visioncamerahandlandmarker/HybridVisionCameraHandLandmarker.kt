@@ -129,14 +129,12 @@ class HybridVisionCameraHandLandmarker : HybridVisionCameraHandLandmarkerSpec() 
       return emptyArray()
     }
 
-    // `pixelFormat: 'rgb'` on the JS side's `useFrameOutput` means the
-    // buffer is raw RGB888 — matches MPImage.IMAGE_FORMAT_RGB below.
-    val image: MPImage = ByteBufferImageBuilder(
-      buffer.getBuffer(true),
-      width.toInt(),
-      height.toInt(),
-      MPImage.IMAGE_FORMAT_RGB,
-    ).build()
+    val imageWidth = width.toInt()
+    val imageHeight = height.toInt()
+    val image = mpImageFromFrame(buffer, imageWidth, imageHeight)
+    if (image == null) {
+      return emptyArray()
+    }
 
     val processingOptions = ImageProcessingOptions.builder()
       .setRotationDegrees(rotationDegrees.toInt())
@@ -147,6 +145,8 @@ class HybridVisionCameraHandLandmarker : HybridVisionCameraHandLandmarkerSpec() 
     } catch (error: Throwable) {
       Log.e(TAG, "detect() failed", error)
       return emptyArray()
+    } finally {
+      image.close()
     }
 
     val handsLandmarks = result.landmarks()
@@ -176,6 +176,35 @@ class HybridVisionCameraHandLandmarker : HybridVisionCameraHandLandmarkerSpec() 
         palmY = wrist.y().toDouble(),
       )
     }.toTypedArray()
+  }
+
+  /**
+   * VisionCamera `pixelFormat: 'rgb'` is NOT packed RGB888. The docs map it
+   * to `rgb-bgra-8-bit` / `rgb-rgba-8-bit` (4 bytes/pixel). Passing that
+   * buffer as `IMAGE_FORMAT_RGB` makes MediaPipe throw
+   * "buffer should be: width*height*3 but is width*height*4" — which is
+   * why the UI stayed on NO HAND even with a palm in the preview.
+   */
+  private fun mpImageFromFrame(buffer: ArrayBuffer, width: Int, height: Int): MPImage? {
+    val src = buffer.getBuffer(true)
+    src.rewind()
+    val remaining = src.remaining()
+    val rgbSize = width * height * 3
+    val rgbaSize = width * height * 4
+
+    val format = when (remaining) {
+      rgbSize -> MPImage.IMAGE_FORMAT_RGB
+      rgbaSize -> MPImage.IMAGE_FORMAT_RGBA
+      else -> {
+        Log.e(
+          TAG,
+          "Unexpected buffer size $remaining for ${width}x${height} (rgb=$rgbSize rgba=$rgbaSize)",
+        )
+        return null
+      }
+    }
+
+    return ByteBufferImageBuilder(src, width, height, format).build()
   }
 
   /**
