@@ -10,5 +10,7 @@ module.exports = {
     '^react-native-vision-camera-worklets$':
       '<rootDir>/__mocks__/react-native-vision-camera-worklets.ts',
     '^react-native-worklets$': '<rootDir>/__mocks__/react-native-worklets.ts',
+    '^@react-native-camera-roll/camera-roll$':
+      '<rootDir>/__mocks__/@react-native-camera-roll/camera-roll.ts',
   },
 };
