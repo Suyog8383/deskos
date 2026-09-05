@@ -114,8 +114,17 @@ function CameraConsole() {
   ]);
 
   const captureSnapshot = async () => {
-    const photo = await photoOutput.capturePhotoToFile({ flashMode: 'off' }, {});
-    setLastCapture(`Snapshot ready: ${photo.filePath}`);
+    setLastCapture('Capturing...');
+    try {
+      const photo = await photoOutput.capturePhotoToFile({ flashMode: 'off' }, {});
+      setLastCapture(`Snapshot ready: ${photo.filePath}`);
+    } catch (error) {
+      // Surface the real failure instead of failing silently — this was
+      // previously an unhandled promise rejection with zero user feedback.
+      const message = error instanceof Error ? error.message : String(error);
+      setLastCapture(`Capture failed: ${message}`);
+      console.error('captureSnapshot failed', error);
+    }
   };
 
   const canRenderCamera = hasCameraPermission && device != null;
