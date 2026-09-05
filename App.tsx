@@ -18,8 +18,9 @@ import {
   SafeAreaProvider,
 } from 'react-native-safe-area-context';
 import { GestureConsole } from './src/gesture/GestureConsole';
+import { FileSortConsole } from './src/files/FileSortConsole';
 
-type Tab = 'ocr' | 'gesture';
+type Tab = 'ocr' | 'gesture' | 'sort';
 
 function App() {
   const [tab, setTab] = useState<Tab>('ocr');
@@ -30,8 +31,11 @@ function App() {
       <View style={tabStyles.tabBar}>
         <TabButton label="OCR CAPTURE" active={tab === 'ocr'} onPress={() => setTab('ocr')} />
         <TabButton label="GESTURE CONTROL" active={tab === 'gesture'} onPress={() => setTab('gesture')} />
+        <TabButton label="SORT FILES" active={tab === 'sort'} onPress={() => setTab('sort')} />
       </View>
-      {tab === 'ocr' ? <CameraConsole /> : <GestureConsole />}
+      {tab === 'ocr' && <CameraConsole />}
+      {tab === 'gesture' && <GestureConsole />}
+      {tab === 'sort' && <FileSortConsole />}
     </SafeAreaProvider>
   );
 }

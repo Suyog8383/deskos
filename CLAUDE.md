@@ -126,6 +126,46 @@ in the version pinned here — no `CPU` constant. The native `detect()` tries
 `NPU` first, falls back to `GPU`, then to no delegate set at all (MediaPipe's
 own default) if both fail to initialize.
 
+### Gesture-driven file sorter (`src/files/`)
+
+A local (phone-only, no bridge/server involved) feature: browse
+`DocumentDirectoryPath/DeskOS/Inbox` and file images into user-defined
+folders (e.g. "Favourite", "School") using the same front-camera gesture
+pipeline as `src/gesture/`, instead of tapping through a picker.
+
+- `gestureSort.ts` — pure `interpretGestureAction(gesture, folders, pendingMove, currentFileId)`
+  state machine, unit tested in `__tests__/gestureSort.test.ts`. Rules: a
+  folder's assigned static gesture (one of the 7 in `ASSIGNABLE_GESTURES`,
+  `types.ts` — everything except the two swipes) shown with the **right**
+  hand copies the current file into that folder; `SWIPE_LEFT` deletes the
+  current file outright; `SWIPE_RIGHT` only acts if the current file was
+  just copied (i.e. `pendingMove` matches it), in which case it deletes
+  the original to turn that copy into a move.
+- `folderStore.ts` persists folder metadata (id/name/assigned gesture) to
+  AsyncStorage — not the files themselves, which live on disk as real
+  directories.
+- `fileOps.ts` wraps `@dr.pogodin/react-native-fs` for the actual
+  copy/delete calls, and `useFileSorter.ts` is the edge-triggered glue
+  (re-runs `useHandGesture`'s frame stream through `interpretGestureAction`
+  once per newly-held gesture, not once per frame, since a held static
+  gesture reports the same label every frame).
+
+**Deliberately scoped to the app's own sandbox directory, not the system
+Gallery/MediaStore** — copy/move/delete inside an app's own storage needs
+zero runtime permissions on any Android version, which is what lets this
+feature skip permission handling for now. Real "import from Gallery" would
+need scoped-storage consent (`MediaStore.createWriteRequest`/
+`createDeleteRequest` on API 30+, or `READ_MEDIA_IMAGES` just to read) —
+that's intentionally not wired up yet; `fileOps.ts` seeds a few placeholder
+files into `Inbox` on first run as a stand-in so the sort flow has
+something to demo in the meantime.
+
+Handedness ("right hand" for the copy rule) comes straight from
+MediaPipe's raw front-camera reading, unverified against what the user
+actually sees on screen (front camera frames are typically mirrored for
+display) — see the caveat in `gestureSort.ts` if it turns out inverted on
+a real device.
+
 ### Jest config gotcha
 
 `jest.config.js` explicitly excludes `bridge/` and `native/*/` via
@@ -134,10 +174,13 @@ picks up `bridge/__tests__/*.test.js` (written for Node's `node --test`,
 not Jest) and fails them. If you add another subpackage with its own
 tests, exclude it the same way.
 
-It also `moduleNameMapper`s three packages to manual mocks in `__mocks__/`
+It also `moduleNameMapper`s five packages to manual mocks in `__mocks__/`
 (`react-native-vision-camera`, `react-native-vision-camera-hand-landmarker`,
-`react-native-worklets`) because all three have native bindings that don't
-exist in the Jest environment. Extend those mocks rather than trying to
+`react-native-worklets`, `@dr.pogodin/react-native-fs`,
+`@react-native-async-storage/async-storage`) because all of them have
+native bindings (or, for async-storage, an ESM-only jest export this
+repo's default `transformIgnorePatterns` won't parse) that don't work
+directly in the Jest environment. Extend those mocks rather than trying to
 run the real native modules under test.
 
 ### Android build constraint

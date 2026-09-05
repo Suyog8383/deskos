@@ -9,5 +9,7 @@ module.exports = {
     '^react-native-vision-camera-hand-landmarker$':
       '<rootDir>/__mocks__/react-native-vision-camera-hand-landmarker.ts',
     '^react-native-worklets$': '<rootDir>/__mocks__/react-native-worklets.ts',
+    '^@dr\\.pogodin/react-native-fs$': '<rootDir>/__mocks__/react-native-fs.ts',
+    '^@react-native-async-storage/async-storage$': '<rootDir>/__mocks__/async-storage.ts',
   },
 };
