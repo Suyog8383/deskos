@@ -3,9 +3,10 @@
  * @format
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { Camera } from 'react-native-vision-camera';
 import { PhotoIdentifier } from '@react-native-camera-roll/camera-roll';
 import { requestGalleryPermission } from './src/gallery/permissions';
 import { usePhotoStack } from './src/gallery/usePhotoStack';
@@ -13,6 +14,7 @@ import { useAlbumName } from './src/gallery/useAlbumName';
 import { SwipeDeck } from './src/gallery/SwipeDeck';
 import { AlbumSetup } from './src/gallery/AlbumSetup';
 import { MediaStoreOps } from './src/native/MediaStoreOps';
+import { useHandSwipe } from './src/gesture/useHandSwipe';
 
 function App() {
   const [permissionState, setPermissionState] = useState<'checking' | 'granted' | 'denied'>(
@@ -58,6 +60,10 @@ function App() {
 function GalleryStack({ albumName }: { albumName: string }) {
   const { photos, loading, consumeTop } = usePhotoStack();
   const [statusText, setStatusText] = useState('');
+  // Imperative handle so the gesture layer can trigger the exact same
+  // animated swipe (and therefore the exact same trash/move handlers) as a
+  // touch swipe, instead of duplicating the swipe-completion logic.
+  const triggerRef = useRef<((direction: 'left' | 'right') => void) | null>(null);
 
   const handleSwipeLeft = (photo: PhotoIdentifier) => {
     const uri = photo.node.image.uri;
@@ -81,6 +87,17 @@ function GalleryStack({ albumName }: { albumName: string }) {
       });
   };
 
+  const { device, hasPermission, requestPermission, handDetected, frameOutput } = useHandSwipe(
+    () => triggerRef.current?.('left'),
+    () => triggerRef.current?.('right'),
+  );
+
+  useEffect(() => {
+    if (!hasPermission) {
+      requestPermission();
+    }
+  }, [hasPermission, requestPermission]);
+
   if (loading && photos.length === 0) {
     return (
       <View style={styles.center}>
@@ -89,9 +106,35 @@ function GalleryStack({ albumName }: { albumName: string }) {
     );
   }
 
+  const gestureActive = hasPermission && device != null;
+
   return (
     <View style={styles.container}>
-      <SwipeDeck photos={photos} onSwipeLeft={handleSwipeLeft} onSwipeRight={handleSwipeRight} />
+      <SwipeDeck
+        photos={photos}
+        onSwipeLeft={handleSwipeLeft}
+        onSwipeRight={handleSwipeRight}
+        triggerRef={triggerRef}
+      />
+
+      {gestureActive && (
+        <View style={styles.gesturePreview}>
+          <Camera
+            style={StyleSheet.absoluteFill}
+            device={device}
+            isActive
+            outputs={[frameOutput]}
+          />
+        </View>
+      )}
+
+      <View style={styles.gestureBadge}>
+        <View style={[styles.gestureDot, handDetected ? styles.gestureDotActive : null]} />
+        <Text style={styles.gestureBadgeText}>
+          {!gestureActive ? 'GESTURE OFF' : handDetected ? 'HAND DETECTED' : 'NO HAND'}
+        </Text>
+      </View>
+
       {statusText ? (
         <View style={styles.statusBar}>
           <Text style={styles.statusText}>{statusText}</Text>
@@ -132,6 +175,44 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingHorizontal: 12,
     paddingVertical: 6,
+  },
+  gesturePreview: {
+    borderColor: 'rgba(231, 231, 239, 0.25)',
+    borderRadius: 10,
+    borderWidth: 1,
+    bottom: 24,
+    height: 96,
+    overflow: 'hidden',
+    position: 'absolute',
+    right: 16,
+    width: 72,
+  },
+  gestureBadge: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(26, 26, 34, 0.9)',
+    borderRadius: 8,
+    flexDirection: 'row',
+    left: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    position: 'absolute',
+    top: 16,
+  },
+  gestureDot: {
+    backgroundColor: '#5f5f6e',
+    borderRadius: 4,
+    height: 8,
+    marginRight: 6,
+    width: 8,
+  },
+  gestureDotActive: {
+    backgroundColor: '#7bd88f',
+  },
+  gestureBadgeText: {
+    color: '#e7e7ef',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.6,
   },
 });
 

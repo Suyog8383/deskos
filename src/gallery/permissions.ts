@@ -10,6 +10,11 @@ export async function requestGalleryPermission(): Promise<boolean> {
       ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
       : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
 
+  const alreadyGranted = await PermissionsAndroid.check(permission);
+  if (alreadyGranted) {
+    return true;
+  }
+
   const result = await PermissionsAndroid.request(permission);
   return result === PermissionsAndroid.RESULTS.GRANTED;
 }
