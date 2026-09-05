@@ -1,0 +1,17 @@
+{
+  "name": "deskos-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local WebSocket bridge that turns DeskOS gesture/OCR payloads into native OS macros and clipboard writes.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

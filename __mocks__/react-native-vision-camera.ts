@@ -20,3 +20,5 @@ export const useMicrophonePermission = () => ({
 export const usePhotoOutput = () => ({
   capturePhotoToFile: jest.fn(async () => ({ filePath: '/mock/frame.jpg' })),
 });
+
+export const useFrameOutput = () => ({ thread: 'mock-frame-output-thread' });

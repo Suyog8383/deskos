@@ -17,15 +17,70 @@ import { Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import {
   SafeAreaProvider,
 } from 'react-native-safe-area-context';
+import { GestureConsole } from './src/gesture/GestureConsole';
+
+type Tab = 'ocr' | 'gesture';
 
 function App() {
+  const [tab, setTab] = useState<Tab>('ocr');
+
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="light-content" />
-      <CameraConsole />
+      <View style={tabStyles.tabBar}>
+        <TabButton label="OCR CAPTURE" active={tab === 'ocr'} onPress={() => setTab('ocr')} />
+        <TabButton label="GESTURE CONTROL" active={tab === 'gesture'} onPress={() => setTab('gesture')} />
+      </View>
+      {tab === 'ocr' ? <CameraConsole /> : <GestureConsole />}
     </SafeAreaProvider>
   );
 }
+
+function TabButton({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[tabStyles.tab, active && tabStyles.tabActive]}>
+      <Text style={[tabStyles.tabText, active && tabStyles.tabTextActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+const tabStyles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: '#071018',
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  tab: {
+    borderBottomColor: 'transparent',
+    borderBottomWidth: 2,
+    marginRight: 24,
+    paddingBottom: 12,
+  },
+  tabActive: {
+    borderBottomColor: '#ed6a5a',
+  },
+  tabText: {
+    color: '#8ba5a8',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  tabTextActive: {
+    color: '#e7f3f1',
+  },
+});
 
 function CameraConsole() {
   const device = useCameraDevice('back');
