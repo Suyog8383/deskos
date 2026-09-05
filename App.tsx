@@ -14,9 +14,7 @@ import {
 } from 'react-native-vision-camera';
 import React, { useEffect, useState } from 'react';
 import { Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
-import {
-  SafeAreaProvider,
-} from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GestureConsole } from './src/gesture/GestureConsole';
 
 type Tab = 'ocr' | 'gesture';
@@ -27,11 +25,13 @@ function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="light-content" />
-      <View style={tabStyles.tabBar}>
-        <TabButton label="OCR CAPTURE" active={tab === 'ocr'} onPress={() => setTab('ocr')} />
-        <TabButton label="GESTURE CONTROL" active={tab === 'gesture'} onPress={() => setTab('gesture')} />
-      </View>
-      {tab === 'ocr' ? <CameraConsole /> : <GestureConsole />}
+      <SafeAreaView style={tabStyles.safeArea} edges={['top', 'bottom']}>
+        <View style={tabStyles.tabBar}>
+          <TabButton label="OCR CAPTURE" active={tab === 'ocr'} onPress={() => setTab('ocr')} />
+          <TabButton label="GESTURE CONTROL" active={tab === 'gesture'} onPress={() => setTab('gesture')} />
+        </View>
+        {tab === 'ocr' ? <CameraConsole /> : <GestureConsole />}
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }
@@ -56,6 +56,10 @@ function TabButton({
 }
 
 const tabStyles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#071018',
+  },
   tabBar: {
     backgroundColor: '#071018',
     flexDirection: 'row',
